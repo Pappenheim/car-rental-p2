@@ -1,8 +1,7 @@
-import {Component, OnInit} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CustomerService } from '../../services/customer.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { CurrencyConversionService } from '../../services/currency-conversion.service';
-
 
 @Component({
   selector: 'app-customer-dashboard',
@@ -26,9 +25,8 @@ export class CustomerDashboardComponent implements OnInit {
   ngOnInit(): void {
     setTimeout(() => {
       this.isVisible = true;
-    }, 1000); // 5 seconds
+    }, 1000); // 1 second
   }
-
 
   getAllCars() {
     this.customerService.getAlCars().subscribe((res) => {
@@ -43,41 +41,7 @@ export class CustomerDashboardComponent implements OnInit {
   onCurrencyChange() {
     this.cars.forEach((car: any) => {
       this.currencyConversionService.convertCurrency('USD', this.selectedCurrency, car.price).subscribe(
-        (response: any) => {
-          // Log the full response for troubleshooting
-          console.log('Received SOAP Response:', response);
-
-          // Parse the SOAP XML response
-          const parser = new DOMParser();
-          const xmlDoc = parser.parseFromString(response, 'application/xml');
-
-          // Use XPath to find the conversion string regardless of namespace
-          const namespaceResolver = (prefix: string) => {
-            if (prefix === 'tns') {
-              return 'urn:currency_converter';
-            } else if (prefix === 'soap11env') {
-              return 'http://schemas.xmlsoap.org/soap/envelope/';
-            }
-            return null;
-          };
-
-          const xpathResult = xmlDoc.evaluate(
-            "//tns:convert_currencyResult//tns:string",
-            xmlDoc,
-            namespaceResolver,
-            XPathResult.STRING_TYPE,
-            null
-          );
-
-          const resultText = xpathResult.stringValue;
-          console.log('Parsed Result Text:', resultText);
-
-          // Use regex to find the numeric conversion value
-          const match = resultText.match(/Converted .* to ([0-9]+\.?[0-9]*)/);
-          const convertedAmount = match ? parseFloat(match[1]) : 0;
-          console.log('Parsed Converted Amount:', convertedAmount);
-
-          // Update the converted price
+        (convertedAmount: number) => {
           this.convertedPrices[car.id] = convertedAmount;
         },
         (error) => {
