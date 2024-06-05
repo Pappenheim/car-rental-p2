@@ -1,19 +1,15 @@
-from zeep import Client
-from zeep.exceptions import Fault, TransportError, XMLSyntaxError
+import grpc
+import currency_converter_pb2
+import currency_converter_pb2_grpc
 
-
-WSDL_URL_LOCAL = 'http://127.0.0.1:8000/?wsdl'
-WSDL_URL = 'https://soap-currency-converter.azurewebsites.net/?wsdl'
 
 def convert_currency(from_currency, to_currency, amount):
-    try:
-        client = Client(wsdl=WSDL_URL)
-        service = client.service
-        response = service.convert_currency(from_currency, to_currency, amount)
-        return response
-    except (Fault, TransportError, XMLSyntaxError) as e:
-        print(f"Error: {e}")
-        return None
+    with grpc.insecure_channel('localhost:50051') as channel:
+        stub = currency_converter_pb2_grpc.CurrencyConverterStub(channel)
+        request = currency_converter_pb2.ConvertCurrencyRequest(from_currency=from_currency, to_currency=to_currency,
+                                                                amount=amount)
+        response = stub.ConvertCurrency(request)
+        return response.message
 
 
 if __name__ == '__main__':
@@ -25,7 +21,7 @@ if __name__ == '__main__':
     print(f"Converting {amount} {from_currency} to {to_currency}...")
     result = convert_currency(from_currency, to_currency, amount)
 
-    if result is not None:
+    if result:
         print(f"Response: {result}")
     else:
         print("Failed to get a response from the service.")

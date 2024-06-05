@@ -1,33 +1,43 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { CurrencyConverterClient } from './Currency_converterServiceClientPb';
+import { ConvertCurrencyRequest, ConvertCurrencyResponse } from './currency_converter_pb';
+import { environment } from 'src/environments/environment';
+
+const CURRENCY_CONVERTER_URL = environment.CURRENCY_CONVERTER_URL;
 
 @Injectable({
   providedIn: 'root'
 })
 export class CurrencyConversionService {
-  private apiUrl = 'https://soap-currency-converter.azurewebsites.net/';
+  private client: CurrencyConverterClient;
 
-  constructor(private http: HttpClient) {}
+  constructor() {
+    this.client = new CurrencyConverterClient(CURRENCY_CONVERTER_URL);
+  }
 
-  convertCurrency(fromCurrency: string, toCurrency: string, amount: number): Observable<string> {
-    const soapBody = `<?xml version="1.0" encoding="utf-8"?>
-      <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
-        xmlns:tns="urn:currency_converter">
-        <soap:Body>
-          <tns:convert_currency>
-            <tns:from_currency>${fromCurrency}</tns:from_currency>
-            <tns:to_currency>${toCurrency}</tns:to_currency>
-            <tns:amount>${amount}</tns:amount>
-          </tns:convert_currency>
-        </soap:Body>
-      </soap:Envelope>`;
+  convertCurrency(fromCurrency: string, toCurrency: string, amount: number): Observable<number> {
+    const request = new ConvertCurrencyRequest();
+    request.setFromCurrency(fromCurrency);
+    request.setToCurrency(toCurrency);
+    request.setAmount(amount);
 
-    const headers = new HttpHeaders({
-      'Content-Type': 'text/xml; charset=utf-8',
-      'SOAPAction': 'convert_currency', // this has to match the SOAP operation name
+    return new Observable(observer => {
+      this.client.convertCurrency(request, {}, (err, response: ConvertCurrencyResponse) => {
+        if (err) {
+          observer.error(err);
+        } else {
+          const message = response.getMessage();
+          const convertedAmount = this.parseConvertedAmount(message);
+          observer.next(convertedAmount);
+          observer.complete();
+        }
+      });
     });
+  }
 
-    return this.http.post<string>(this.apiUrl, soapBody, { headers, responseType: 'text' as 'json' });
+  private parseConvertedAmount(message: string): number {
+    const match = message.match(/Converted .* to ([0-9]+\.?[0-9]*)/);
+    return match ? parseFloat(match[1]) : 0;
   }
 }

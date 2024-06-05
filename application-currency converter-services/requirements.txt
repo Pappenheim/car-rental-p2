@@ -1,3 +1,4 @@
-spyne
-lxml
-requests
+grpcio>=1.63.0
+grpcio-tools==1.39.0
+requests==2.25.1
+urllib3==1.26.5

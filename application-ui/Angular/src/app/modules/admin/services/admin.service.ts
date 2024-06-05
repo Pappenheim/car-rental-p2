@@ -2,8 +2,9 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { StorageService } from 'src/app/auth/services/storage/storage.service';
+import { environment } from 'src/environments/environment';
 
-const BASIC_URL = ["https://car-rental-mono.azurewebsites.net"];
+const BASIC_URL = environment.BASIC_URL;
 
 @Injectable({
   providedIn: 'root'
